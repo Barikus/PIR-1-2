@@ -1,0 +1,424 @@
+swagger: "2.0"
+info:
+  title: Book Reviews API
+  description: |
+    Полная документация API для Лабораторных работ №1 и №2.
+    Включает версии v1, v2 и Internal API.
+  version: "2.0.0"
+  contact:
+    email: support@bookreviews.com
+basePath: "/api"
+schemes:
+  - http
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: "Введите токен в формате: Bearer <ваш_токен>"
+  InternalKey:
+    type: apiKey
+    name: X-API-Key
+    in: header
+    description: "Ключ для внутреннего API (по умолчанию: internal-secret-key)"
+
+tags:
+  - name: Auth
+    description: Аутентификация пользователей
+  - name: Books V1
+    description: Управление книгами (Базовая версия)
+  - name: Books V2
+    description: Управление книгами (Расширенная версия)
+  - name: Reviews
+    description: Управление рецензиями
+  - name: Internal
+    description: Служебные эндпоинты
+
+paths:
+  # --- AUTH ---
+  /v1/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Вход в систему (получение токена)
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required:
+              - username
+              - email
+            properties:
+              username:
+                type: string
+                example: "читатель"
+              email:
+                type: string
+                example: "reader@example.com"
+      responses:
+        200:
+          description: Успешный вход
+        401:
+          description: Ошибка авторизации
+
+  /v2/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Вход в систему (v2)
+      description: Аналогичен v1
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+              email:
+                type: string
+      responses:
+        200:
+          description: Успешный вход
+
+  # --- BOOKS V1 ---
+  /v1/books:
+    get:
+      tags:
+        - Books V1
+      summary: Список книг
+      parameters:
+        - name: page
+          in: query
+          type: integer
+          default: 1
+        - name: per_page
+          in: query
+          type: integer
+          default: 10
+      responses:
+        200:
+          description: Список книг получен
+    post:
+      tags:
+        - Books V1
+      summary: Создать книгу
+      security:
+        - Bearer: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          type: string
+          description: Ключ идемпотентности
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/BookCreateV1'
+      responses:
+        201:
+          description: Книга создана
+
+  /v1/books/{book_id}:
+    get:
+      tags:
+        - Books V1
+      summary: Получить книгу по ID
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: Данные книги
+        404:
+          description: Книга не найдена
+    put:
+      tags:
+        - Books V1
+      summary: Обновить книгу
+      security:
+        - Bearer: []
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          type: integer
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/BookCreateV1'
+      responses:
+        200:
+          description: Книга обновлена
+    delete:
+      tags:
+        - Books V1
+      summary: Удалить книгу
+      security:
+        - Bearer: []
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        204:
+          description: Книга удалена
+
+  # --- BOOKS V2 ---
+  /v2/books:
+    get:
+      tags:
+        - Books V2
+      summary: Список книг (расширенный)
+      description: Поддерживает опциональные поля (include)
+      parameters:
+        - name: page
+          in: query
+          type: integer
+          default: 1
+        - name: per_page
+          in: query
+          type: integer
+          default: 10
+        - name: include
+          in: query
+          type: string
+          description: "Пример: reviews,stats"
+      responses:
+        200:
+          description: Список книг
+    post:
+      tags:
+        - Books V2
+      summary: Создать книгу (расширенный)
+      security:
+        - Bearer: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          type: string
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/BookCreateV2'
+      responses:
+        201:
+          description: Книга создана
+
+  /v2/books/{book_id}:
+    get:
+      tags:
+        - Books V2
+      summary: Получить книгу по ID (v2)
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: Данные книги
+    put:
+      tags:
+        - Books V2
+      summary: Обновить книгу (v2)
+      security:
+        - Bearer: []
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          type: integer
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/BookCreateV2'
+      responses:
+        200:
+          description: Книга обновлена
+    delete:
+      tags:
+        - Books V2
+      summary: Удалить книгу (v2)
+      security:
+        - Bearer: []
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        204:
+          description: Книга удалена
+
+  # --- REVIEWS ---
+  /v1/reviews:
+    get:
+      tags:
+        - Reviews
+      summary: Список рецензий
+      parameters:
+        - name: page
+          in: query
+          type: integer
+          default: 1
+        - name: per_page
+          in: query
+          type: integer
+          default: 10
+      responses:
+        200:
+          description: Список рецензий
+    post:
+      tags:
+        - Reviews
+      summary: Добавить рецензию
+      security:
+        - Bearer: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          type: string
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/ReviewCreate'
+      responses:
+        201:
+          description: Рецензия создана
+
+  /v1/reviews/{review_id}:
+    get:
+      tags:
+        - Reviews
+      summary: Получить рецензию
+      parameters:
+        - name: review_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: Детали рецензии
+    put:
+      tags:
+        - Reviews
+      summary: Обновить рецензию
+      description: Можно обновлять только свои рецензии
+      security:
+        - Bearer: []
+      parameters:
+        - name: review_id
+          in: path
+          required: true
+          type: integer
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              rating:
+                type: integer
+              text:
+                type: string
+      responses:
+        200:
+          description: Рецензия обновлена
+    delete:
+      tags:
+        - Reviews
+      summary: Удалить рецензию
+      security:
+        - Bearer: []
+      parameters:
+        - name: review_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        204:
+          description: Рецензия удалена
+
+  # --- INTERNAL ---
+  /internal/stats:
+    get:
+      tags:
+        - Internal
+      summary: Статистика системы
+      description: Доступ только по X-API-Key
+      security:
+        - InternalKey: []
+      responses:
+        200:
+          description: Статистика получена
+        401:
+          description: Неверный ключ API
+
+definitions:
+  BookCreateV1:
+    type: object
+    required:
+      - title
+      - author
+      - published_year
+    properties:
+      title:
+        type: string
+        example: "Война и мир"
+      author:
+        type: string
+        example: "Лев Толстой"
+      published_year:
+        type: integer
+        example: 1869
+      isbn:
+        type: string
+        example: "978-5-12345"
+
+  BookCreateV2:
+    type: object
+    properties:
+      title:
+        type: string
+      author:
+        type: string
+      published_year:
+        type: integer
+      isbn:
+        type: string
+      publisher:
+        type: string
+        example: "Издательство АСТ"
+      genre:
+        type: string
+        example: "Роман"
+
+  ReviewCreate:
+    type: object
+    required:
+      - book_id
+      - rating
+      - text
+    properties:
+      book_id:
+        type: integer
+        example: 1
+      rating:
+        type: integer
+        minimum: 1
+        maximum: 5
+        example: 5
+      text:
+        type: string
+        example: "Отличная книга!"

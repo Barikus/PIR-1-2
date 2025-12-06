@@ -1,0 +1,5 @@
+Flask==2.3.0
+Flask-RESTful==0.3.10
+Flask-Limiter==3.5.0
+Flasgger==0.9.7.1
+PyJWT==2.8.0
